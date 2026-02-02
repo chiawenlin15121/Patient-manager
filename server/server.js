@@ -22,6 +22,17 @@ app.get('/api/patients', async (req, res) => {
     }
 });
 
+// Get patient count
+app.get('/api/patients/count', async (req, res) => {
+    try {
+        const count = await prisma.patients.count();
+        res.json({ count });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Get orders for a patient
 app.get('/api/patients/:id/orders', async (req, res) => {
     const { id } = req.params;
