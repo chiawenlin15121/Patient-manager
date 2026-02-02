@@ -22,6 +22,35 @@ app.get('/api/patients', async (req, res) => {
     }
 });
 
+// Create a new patient
+app.post('/api/patients', async (req, res) => {
+    const { name, gender, mrn, birth_date } = req.body;
+
+    // Basic validation
+    if (!name || !gender || !mrn || !birth_date) {
+        return res.status(400).json({ error: 'All fields (name, gender, mrn, birth_date) are required' });
+    }
+
+    try {
+        const newPatient = await prisma.patients.create({
+            data: {
+                name,
+                gender,
+                mrn,
+                birth_date: new Date(birth_date),
+            },
+        });
+        res.status(201).json(newPatient); // 201 Created
+    } catch (err) {
+        console.error(err);
+        // Prisma unique constraint violation code
+        if (err.code === 'P2002') {
+            return res.status(409).json({ error: 'Patient with this MRN already exists' });
+        }
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Get patient count
 app.get('/api/patients/count', async (req, res) => {
     try {

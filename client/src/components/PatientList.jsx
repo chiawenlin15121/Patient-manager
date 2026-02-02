@@ -2,26 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { List, ListItem, ListItemButton, ListItemText, ListItemAvatar, Avatar, Typography, Paper, Box, Pagination, Stack, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import api from '../api';
+import AddPatientDialog from './AddPatientDialog';
 
 const PatientList = ({ onSelectPatient }) => {
     const [patients, setPatients] = useState([]);
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(1);
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const rowsPerPage = 5;
 
+    const fetchData = async () => {
+        try {
+            const [patientsRes, countRes] = await Promise.all([
+                api.get('/patients'),
+                api.get('/patients/count')
+            ]);
+            setPatients(patientsRes.data);
+            setTotalCount(countRes.data.count);
+        } catch (err) {
+            console.error("Failed to fetch data, make sure server is running.", err);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [patientsRes, countRes] = await Promise.all([
-                    api.get('/patients'),
-                    api.get('/patients/count')
-                ]);
-                setPatients(patientsRes.data);
-                setTotalCount(countRes.data.count);
-            } catch (err) {
-                console.error("Failed to fetch data, make sure server is running.", err);
-            }
-        };
         fetchData();
     }, []);
 
@@ -40,7 +43,12 @@ const PatientList = ({ onSelectPatient }) => {
                 <Typography variant="subtitle1" fontWeight="bold" color="text.secondary">
                     Total Patients: {totalCount}
                 </Typography>
-                <Button variant="contained" startIcon={<AddIcon />} sx={{ borderRadius: 2 }}>
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    sx={{ borderRadius: 2 }}
+                    onClick={() => setIsAddDialogOpen(true)}
+                >
                     Add Patient
                 </Button>
             </Box>
@@ -104,6 +112,12 @@ const PatientList = ({ onSelectPatient }) => {
                     />
                 </Stack>
             </Box>
+
+            <AddPatientDialog
+                open={isAddDialogOpen}
+                onClose={() => setIsAddDialogOpen(false)}
+                onPatientAdded={fetchData}
+            />
         </Paper>
     );
 };
