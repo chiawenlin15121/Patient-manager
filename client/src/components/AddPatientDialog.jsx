@@ -12,7 +12,7 @@ import {
     MenuItem,
     Stack
 } from '@mui/material';
-import api from '../api';
+import patientService from '../services/patientService';
 
 const AddPatientDialog = ({ open, onClose, onPatientAdded }) => {
     const [formData, setFormData] = useState({
@@ -31,7 +31,7 @@ const AddPatientDialog = ({ open, onClose, onPatientAdded }) => {
 
     const handleSubmit = async () => {
         try {
-            await api.post('/patients', formData);
+            await patientService.createPatient(formData);
             onPatientAdded();
             onClose();
             // Reset form

@@ -1,32 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { List, ListItem, ListItemButton, ListItemText, ListItemAvatar, Avatar, Typography, Paper, Box, Pagination, Stack, Button } from '@mui/material';
+import React, { useState } from 'react';
+import { List, ListItem, ListItemButton, ListItemText, ListItemAvatar, Avatar, Typography, Paper, Box, Pagination, Stack, Button, CircularProgress, Alert } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import api from '../api';
+import usePatients from '../hooks/usePatients';
 import AddPatientDialog from './AddPatientDialog';
 
 const PatientList = ({ onSelectPatient }) => {
-    const [patients, setPatients] = useState([]);
-    const [totalCount, setTotalCount] = useState(0);
+    const { patients, totalCount, loading, error, refetch } = usePatients();
     const [page, setPage] = useState(1);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const rowsPerPage = 5;
-
-    const fetchData = async () => {
-        try {
-            const [patientsRes, countRes] = await Promise.all([
-                api.get('/patients'),
-                api.get('/patients/count')
-            ]);
-            setPatients(patientsRes.data);
-            setTotalCount(countRes.data.count);
-        } catch (err) {
-            console.error("Failed to fetch data, make sure server is running.", err);
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     const handleChangePage = (event, value) => {
         setPage(value);
@@ -36,6 +18,24 @@ const PatientList = ({ onSelectPatient }) => {
     const indexOfLastPatient = page * rowsPerPage;
     const indexOfFirstPatient = indexOfLastPatient - rowsPerPage;
     const currentPatients = patients.slice(indexOfFirstPatient, indexOfLastPatient);
+
+    if (loading && patients.length === 0) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 4, bgcolor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)' }}>
+                <Alert severity="error">
+                    無法獲取資料，請確認後端伺服器是否運行。(Error: {error.message})
+                </Alert>
+            </Paper>
+        );
+    }
 
     return (
         <Paper elevation={3} sx={{ borderRadius: 4, overflow: 'hidden', bgcolor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)', height: '70vh', display: 'flex', flexDirection: 'column' }}>
@@ -116,7 +116,7 @@ const PatientList = ({ onSelectPatient }) => {
             <AddPatientDialog
                 open={isAddDialogOpen}
                 onClose={() => setIsAddDialogOpen(false)}
-                onPatientAdded={fetchData}
+                onPatientAdded={refetch}
             />
         </Paper>
     );
