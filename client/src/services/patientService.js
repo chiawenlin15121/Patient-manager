@@ -6,11 +6,15 @@ import api from '../api';
  */
 const patientService = {
     /**
-     * Fetches the complete list of patients.
-     * @returns {Promise<Array>} The list of patients.
+     * Fetches the complete list of patients with pagination.
+     * @param {number} page - The page number (1-indexed).
+     * @param {number} limit - The number of items per page.
+     * @returns {Promise<Object>} The paginated patient data.
      */
-    getAllPatients: async () => {
-        const response = await api.get('/patients');
+    getAllPatients: async (page = 1, limit = 5) => {
+        const response = await api.get('/patients', {
+            params: { page, limit }
+        });
         return response.data;
     },
 

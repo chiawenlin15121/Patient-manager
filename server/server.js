@@ -9,13 +9,29 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Get all patients
+// Get all patients with pagination
 app.get('/api/patients', async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5; // Default limit 5 as per frontend rowsPerPage
+    const skip = (page - 1) * limit;
+
     try {
-        const patients = await prisma.patients.findMany({
-            orderBy: { id: 'asc' },
+        const [patients, total] = await Promise.all([
+            prisma.patients.findMany({
+                skip: skip,
+                take: limit,
+                orderBy: { id: 'asc' },
+            }),
+            prisma.patients.count()
+        ]);
+
+        res.json({
+            data: patients,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
         });
-        res.json(patients);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
@@ -62,15 +78,33 @@ app.get('/api/patients/count', async (req, res) => {
     }
 });
 
-// Get orders for a patient
+// Get orders for a patient with pagination
 app.get('/api/patients/:id/orders', async (req, res) => {
     const { id } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
+
     try {
-        const orders = await prisma.orders.findMany({
-            where: { patient_id: Number(id) },
-            orderBy: { created_at: 'desc' },
+        const [orders, total] = await Promise.all([
+            prisma.orders.findMany({
+                where: { patient_id: Number(id) },
+                skip: skip,
+                take: limit,
+                orderBy: { created_at: 'desc' },
+            }),
+            prisma.orders.count({
+                where: { patient_id: Number(id) },
+            })
+        ]);
+
+        res.json({
+            data: orders,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
         });
-        res.json(orders);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });

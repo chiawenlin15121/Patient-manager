@@ -5,19 +5,12 @@ import usePatients from '../hooks/usePatients';
 import AddPatientDialog from './AddPatientDialog';
 
 const PatientList = ({ onSelectPatient }) => {
-    const { patients, totalCount, loading, error, refetch } = usePatients();
-    const [page, setPage] = useState(1);
+    const { patients, totalCount, page, setPage, limit, loading, error, refetch } = usePatients();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-    const rowsPerPage = 5;
 
     const handleChangePage = (event, value) => {
         setPage(value);
     };
-
-    // Calculate the current patients to display
-    const indexOfLastPatient = page * rowsPerPage;
-    const indexOfFirstPatient = indexOfLastPatient - rowsPerPage;
-    const currentPatients = patients.slice(indexOfFirstPatient, indexOfLastPatient);
 
     if (loading && patients.length === 0) {
         return (
@@ -55,7 +48,7 @@ const PatientList = ({ onSelectPatient }) => {
 
             <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
                 <List sx={{ width: '100%', p: 0 }}>
-                    {currentPatients.map((patient, index) => (
+                    {patients.map((patient, index) => (
                         <ListItem key={patient.id} disablePadding divider>
                             <ListItemButton onClick={() => onSelectPatient(patient)} sx={{ py: 2 }}>
                                 <ListItemAvatar>
@@ -105,7 +98,7 @@ const PatientList = ({ onSelectPatient }) => {
             <Box sx={{ p: 2, borderTop: '1px solid rgba(0, 0, 0, 0.12)', display: 'flex', justifyContent: 'center' }}>
                 <Stack spacing={2}>
                     <Pagination
-                        count={Math.ceil(patients.length / rowsPerPage)}
+                        count={Math.ceil(totalCount / limit)}
                         page={page}
                         onChange={handleChangePage}
                         color="primary"

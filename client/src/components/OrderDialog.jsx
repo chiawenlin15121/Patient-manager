@@ -1,45 +1,29 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent,
     Button, IconButton, List, ListItem, ListItemText,
-    TextField, Typography, Box, Paper
+    TextField, Typography, Box, Paper, Pagination, Stack, CircularProgress
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
-import api from '../api';
+import orderService from '../services/orderService';
+import useOrders from '../hooks/useOrders';
 
 const OrderDialog = ({ patient, open, onClose }) => {
-    const [orders, setOrders] = useState([]);
+    const { orders, totalCount, page, setPage, limit, loading, refetch } = useOrders(patient?.id);
     const [newOrderMode, setNewOrderMode] = useState(false);
     const [newOrderText, setNewOrderText] = useState('');
     const [editingOrderId, setEditingOrderId] = useState(null);
     const [editText, setEditText] = useState('');
 
-    useEffect(() => {
-        if (patient && open) {
-            fetchOrders();
-            setNewOrderMode(false);
-            setEditingOrderId(null);
-        }
-    }, [patient, open]);
-
-    const fetchOrders = async () => {
-        try {
-            const res = await api.get(`/patients/${patient.id}/orders`);
-            setOrders(res.data);
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
     const handleAddOrder = async () => {
         try {
-            await api.post('/orders', { patient_id: patient.id, message: newOrderText });
+            await orderService.createOrder({ patient_id: patient.id, message: newOrderText });
             setNewOrderMode(false);
             setNewOrderText('');
-            fetchOrders();
+            refetch();
         } catch (err) {
             console.error(err);
         }
@@ -47,9 +31,9 @@ const OrderDialog = ({ patient, open, onClose }) => {
 
     const handleSaveEdit = async (id) => {
         try {
-            await api.put(`/orders/${id}`, { message: editText });
+            await orderService.updateOrder(id, { message: editText });
             setEditingOrderId(null);
-            fetchOrders();
+            refetch();
         } catch (err) {
             console.error(err);
         }
@@ -58,6 +42,10 @@ const OrderDialog = ({ patient, open, onClose }) => {
     const startEdit = (order) => {
         setEditingOrderId(order.id);
         setEditText(order.message);
+    };
+
+    const handleChangePage = (event, value) => {
+        setPage(value);
     };
 
     return (
@@ -94,7 +82,7 @@ const OrderDialog = ({ patient, open, onClose }) => {
                     </IconButton>
                 </Box>
             </DialogTitle>
-            <DialogContent dividers sx={{ backgroundColor: '#f8f9fa', minHeight: '400px', p: 3 }}>
+            <DialogContent dividers sx={{ backgroundColor: '#f8f9fa', minHeight: '400px', p: 3, display: 'flex', flexDirection: 'column' }}>
                 {newOrderMode && (
                     <Paper sx={{ p: 3, mb: 3, borderRadius: 3, border: '2px solid #6c5ce7', boxShadow: '0 4px 20px rgba(108, 92, 231, 0.1)' }} elevation={0}>
                         <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>新增醫囑</Typography>
@@ -116,59 +104,80 @@ const OrderDialog = ({ patient, open, onClose }) => {
                     </Paper>
                 )}
 
-                <List disablePadding>
-                    {orders.map((order) => (
-                        <Paper key={order.id} sx={{ mb: 2, borderRadius: 3, overflow: 'hidden', transition: 'box-shadow 0.3s', '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.1)' } }} elevation={0} variant="outlined">
-                            <ListItem
-                                alignItems="flex-start"
-                                sx={{ p: 2 }}
-                                secondaryAction={
-                                    editingOrderId === order.id ? null : (
-                                        <IconButton edge="end" onClick={() => startEdit(order)} sx={{ mt: 1 }}>
-                                            <EditIcon fontSize="small" />
-                                        </IconButton>
-                                    )
-                                }
-                            >
-                                {editingOrderId === order.id ? (
-                                    <Box sx={{ width: '100%', pr: 4 }}>
-                                        <Typography variant="caption" color="primary" fontWeight="bold">編輯醫囑</Typography>
-                                        <TextField
-                                            fullWidth
-                                            multiline
-                                            rows={2}
-                                            value={editText}
-                                            onChange={(e) => setEditText(e.target.value)}
-                                            sx={{ mt: 1, bgcolor: '#fff' }}
-                                        />
-                                        <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                                            <Button size="small" onClick={() => setEditingOrderId(null)}>取消</Button>
-                                            <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={() => handleSaveEdit(order.id)}>更新</Button>
-                                        </Box>
-                                    </Box>
-                                ) : (
-                                    <ListItemText
-                                        primary={
-                                            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, color: '#2d3436' }}>{order.message}</Typography>
+                {loading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
+                        <CircularProgress />
+                    </Box>
+                ) : (
+                    <Box sx={{ flexGrow: 1 }}>
+                        <List disablePadding>
+                            {orders.map((order) => (
+                                <Paper key={order.id} sx={{ mb: 2, borderRadius: 3, overflow: 'hidden', transition: 'box-shadow 0.3s', '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.1)' } }} elevation={0} variant="outlined">
+                                    <ListItem
+                                        alignItems="flex-start"
+                                        sx={{ p: 2 }}
+                                        secondaryAction={
+                                            editingOrderId === order.id ? null : (
+                                                <IconButton edge="end" onClick={() => startEdit(order)} sx={{ mt: 1 }}>
+                                                    <EditIcon fontSize="small" />
+                                                </IconButton>
+                                            )
                                         }
-                                        secondary={
-                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                                                {new Date(order.created_at).toLocaleString('zh-TW')}
-                                                {order.updated_at !== order.created_at && ' (已編輯)'}
-                                            </Typography>
-                                        }
-                                    />
-                                )}
-                            </ListItem>
-                        </Paper>
-                    ))}
-                    {!newOrderMode && orders.length === 0 && (
-                        <Box sx={{ textAlign: 'center', py: 8, opacity: 0.6 }}>
-                            <Typography variant="h6" color="text.secondary">尚無醫囑</Typography>
-                            <Typography variant="body2" color="text.secondary">點擊上方按鈕新增第一筆醫囑</Typography>
-                        </Box>
-                    )}
-                </List>
+                                    >
+                                        {editingOrderId === order.id ? (
+                                            <Box sx={{ width: '100%', pr: 4 }}>
+                                                <Typography variant="caption" color="primary" fontWeight="bold">編輯醫囑</Typography>
+                                                <TextField
+                                                    fullWidth
+                                                    multiline
+                                                    rows={2}
+                                                    value={editText}
+                                                    onChange={(e) => setEditText(e.target.value)}
+                                                    sx={{ mt: 1, bgcolor: '#fff' }}
+                                                />
+                                                <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                                                    <Button size="small" onClick={() => setEditingOrderId(null)}>取消</Button>
+                                                    <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={() => handleSaveEdit(order.id)}>更新</Button>
+                                                </Box>
+                                            </Box>
+                                        ) : (
+                                            <ListItemText
+                                                primary={
+                                                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, color: '#2d3436' }}>{order.message}</Typography>
+                                                }
+                                                secondary={
+                                                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                                        {new Date(order.created_at).toLocaleString('zh-TW')}
+                                                        {order.updated_at !== order.created_at && ' (已編輯)'}
+                                                    </Typography>
+                                                }
+                                            />
+                                        )}
+                                    </ListItem>
+                                </Paper>
+                            ))}
+                            {!newOrderMode && orders.length === 0 && (
+                                <Box sx={{ textAlign: 'center', py: 8, opacity: 0.6 }}>
+                                    <Typography variant="h6" color="text.secondary">尚無醫囑</Typography>
+                                    <Typography variant="body2" color="text.secondary">點擊上方按鈕新增第一筆醫囑</Typography>
+                                </Box>
+                            )}
+                        </List>
+                    </Box>
+                )}
+
+                {/* Pagination */}
+                {totalCount > 0 && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
+                        <Pagination
+                            count={Math.ceil(totalCount / limit)}
+                            page={page}
+                            onChange={handleChangePage}
+                            color="primary"
+                            size="small"
+                        />
+                    </Box>
+                )}
             </DialogContent>
         </Dialog>
     );
