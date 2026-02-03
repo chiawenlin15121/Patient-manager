@@ -11,18 +11,21 @@ const PatientList = ({ onSelectPatient }) => {
     const [searchTerm, setSearchTerm] = useState(searchQuery);
 
     // Debounce search update
+    // Sync local search term with URL search query (e.g. on back/reload)
+    useEffect(() => {
+        setSearchTerm(searchQuery);
+    }, [searchQuery]);
+
+    // Debounce search update
     useEffect(() => {
         const handler = setTimeout(() => {
             setSearchQuery(searchTerm);
-            if (searchTerm !== searchQuery) {
-                setPage(1); // Reset to first page on new search
-            }
         }, 500);
 
         return () => {
             clearTimeout(handler);
         };
-    }, [searchTerm, setSearchQuery, searchQuery, setPage]);
+    }, [searchTerm, setSearchQuery]);
 
     const handleChangePage = (event, value) => {
         setPage(value);

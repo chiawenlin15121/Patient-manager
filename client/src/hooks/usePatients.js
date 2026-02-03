@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import patientService from '../services/patientService';
 
 /**
@@ -6,13 +7,43 @@ import patientService from '../services/patientService';
  * separating the data fetching logic from the UI component.
  */
 const usePatients = (initialPage = 1, initialLimit = 5) => {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [patients, setPatients] = useState([]);
     const [totalCount, setTotalCount] = useState(0);
-    const [page, setPage] = useState(initialPage);
-    const [limit, setLimit] = useState(initialLimit);
-    const [searchQuery, setSearchQuery] = useState('');
+
+    const page = parseInt(searchParams.get('page') || initialPage);
+    const limit = parseInt(searchParams.get('limit') || initialLimit);
+    const searchQuery = searchParams.get('q') || '';
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    const setPage = (newPage) => {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('page', newPage);
+        setSearchParams(newParams);
+    };
+
+    const setLimit = (newLimit) => {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('limit', newLimit);
+        setSearchParams(newParams);
+    };
+
+    const setSearchQuery = (newQuery) => {
+        const currentQ = searchParams.get('q') || '';
+        if (currentQ === newQuery) return;
+
+        const newParams = new URLSearchParams(searchParams);
+        if (newQuery) {
+            newParams.set('q', newQuery);
+        } else {
+            newParams.delete('q');
+        }
+        newParams.set('page', 1);
+        setSearchParams(newParams, { replace: true });
+    };
+
 
     const fetchPatients = useCallback(async () => {
         setLoading(true);
