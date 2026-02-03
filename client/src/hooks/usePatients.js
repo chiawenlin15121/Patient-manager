@@ -10,6 +10,7 @@ const usePatients = (initialPage = 1, initialLimit = 5) => {
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(initialPage);
     const [limit, setLimit] = useState(initialLimit);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -17,7 +18,7 @@ const usePatients = (initialPage = 1, initialLimit = 5) => {
         setLoading(true);
         setError(null);
         try {
-            const data = await patientService.getAllPatients(page, limit);
+            const data = await patientService.getAllPatients(page, limit, searchQuery);
             setPatients(data.data);
             setTotalCount(data.total);
         } catch (err) {
@@ -26,9 +27,9 @@ const usePatients = (initialPage = 1, initialLimit = 5) => {
         } finally {
             setLoading(false);
         }
-    }, [page, limit]);
+    }, [page, limit, searchQuery]);
 
-    // Fetch when page or limit changes
+    // Fetch when page, limit, or search query changes
     useEffect(() => {
         fetchPatients();
     }, [fetchPatients]);
@@ -40,6 +41,8 @@ const usePatients = (initialPage = 1, initialLimit = 5) => {
         setPage,
         limit,
         setLimit,
+        searchQuery,
+        setSearchQuery,
         loading,
         error,
         refetch: fetchPatients

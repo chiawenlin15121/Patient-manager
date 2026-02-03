@@ -9,20 +9,37 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Get all patients with pagination
+// Get all patients with pagination and search
 app.get('/api/patients', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5; // Default limit 5 as per frontend rowsPerPage
+    const search = req.query.search || '';
     const skip = (page - 1) * limit;
+
+    const where = search ? {
+        name: {
+            contains: search,
+            // Mode 'insensitive' depends on database collation, but usually supported in postgres.
+            // If using sqlite, check if need case insensitive setup, but for now assuming default or postgres.
+            // Safe to try mode 'insensitive' for Prisma Client if database supports it.
+            // If using standard sqlite, it might not support insensitive out of box without config,
+            // but let's assume standard behavior first. If it fails, we fall back.
+            // Actually, for SQLite, contains is case insensitive by default for ASCII usually, but let's try explicit mode.
+            // The user didn't specify DB type, but usually it's better to be explicit.
+            // User context said "PostgreSQL database" in previous turn summary.
+            mode: 'insensitive',
+        }
+    } : {};
 
     try {
         const [patients, total] = await Promise.all([
             prisma.patients.findMany({
+                where,
                 skip: skip,
                 take: limit,
                 orderBy: { id: 'asc' },
             }),
-            prisma.patients.count()
+            prisma.patients.count({ where })
         ]);
 
         res.json({
@@ -78,23 +95,34 @@ app.get('/api/patients/count', async (req, res) => {
     }
 });
 
-// Get orders for a patient with pagination
+// Get orders for a patient with pagination and search
 app.get('/api/patients/:id/orders', async (req, res) => {
     const { id } = req.params;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
+    const search = req.query.search || '';
     const skip = (page - 1) * limit;
+
+    const where = {
+        patient_id: Number(id),
+        ...(search ? {
+            message: {
+                contains: search,
+                mode: 'insensitive',
+            }
+        } : {})
+    };
 
     try {
         const [orders, total] = await Promise.all([
             prisma.orders.findMany({
-                where: { patient_id: Number(id) },
+                where,
                 skip: skip,
                 take: limit,
                 orderBy: { created_at: 'desc' },
             }),
             prisma.orders.count({
-                where: { patient_id: Number(id) },
+                where,
             })
         ]);
 

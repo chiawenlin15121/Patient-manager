@@ -1,18 +1,34 @@
-import React, { useState } from 'react';
-import { List, ListItem, ListItemButton, ListItemText, ListItemAvatar, Avatar, Typography, Paper, Box, Pagination, Stack, Button, CircularProgress, Alert } from '@mui/material';
+
+import { List, ListItem, ListItemButton, ListItemText, ListItemAvatar, Avatar, Typography, Paper, Box, Pagination, Stack, Button, CircularProgress, Alert, LinearProgress, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import React, { useState, useEffect } from 'react';
 import usePatients from '../hooks/usePatients';
 import AddPatientDialog from './AddPatientDialog';
 
 const PatientList = ({ onSelectPatient }) => {
-    const { patients, totalCount, page, setPage, limit, loading, error, refetch } = usePatients();
+    const { patients, totalCount, page, setPage, limit, loading, error, refetch, searchQuery, setSearchQuery } = usePatients();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState(searchQuery);
+
+    // Debounce search update
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setSearchQuery(searchTerm);
+            if (searchTerm !== searchQuery) {
+                setPage(1); // Reset to first page on new search
+            }
+        }, 500);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [searchTerm, setSearchQuery, searchQuery, setPage]);
 
     const handleChangePage = (event, value) => {
         setPage(value);
     };
 
-    if (loading && patients.length === 0) {
+    if (loading && patients.length === 0 && !searchTerm) { // Only show full loader on initial load without search interactions pending
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
                 <CircularProgress />
@@ -31,67 +47,90 @@ const PatientList = ({ onSelectPatient }) => {
     }
 
     return (
-        <Paper elevation={3} sx={{ borderRadius: 4, overflow: 'hidden', bgcolor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)', height: '70vh', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ p: 2, borderBottom: '1px solid rgba(0, 0, 0, 0.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="subtitle1" fontWeight="bold" color="text.secondary">
-                    Total Patients: {totalCount}
+        <Paper elevation={3} sx={{ borderRadius: 4, overflow: 'hidden', bgcolor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)', height: '75vh', display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ p: 2, borderBottom: '1px solid rgba(0, 0, 0, 0.12)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6" fontWeight="bold" color="primary">
+                        病患列表
+                    </Typography>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        sx={{ borderRadius: 2 }}
+                        onClick={() => setIsAddDialogOpen(true)}
+                    >
+                        新增病患
+                    </Button>
+                </Box>
+                <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="搜尋病患名稱..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    fullWidth
+                    sx={{ bgcolor: 'rgba(255,255,255,0.5)', borderRadius: 1 }}
+                />
+                <Typography variant="caption" color="text.secondary" align="right" sx={{ display: 'block' }}>
+                    Total: {totalCount}
                 </Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    sx={{ borderRadius: 2 }}
-                    onClick={() => setIsAddDialogOpen(true)}
-                >
-                    Add Patient
-                </Button>
             </Box>
 
             <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+                {loading && <Box sx={{ width: '100%' }}><LinearProgress /></Box>}
                 <List sx={{ width: '100%', p: 0 }}>
-                    {patients.map((patient, index) => (
-                        <ListItem key={patient.id} disablePadding divider>
-                            <ListItemButton onClick={() => onSelectPatient(patient)} sx={{ py: 2 }}>
-                                <ListItemAvatar>
-                                    <Avatar
-                                        sx={{
-                                            bgcolor: patient.gender === 'Male' ? '#6c5ce7' : '#ff7675',
-                                            width: 50,
-                                            height: 50,
-                                            mr: 2
-                                        }}
-                                    >
-                                        {patient.name[0]}
-                                    </Avatar>
-                                </ListItemAvatar>
-                                <ListItemText
-                                    primary={
-                                        <Typography variant="h6" component="span" fontWeight="bold" color="text.primary">
-                                            {patient.name}
-                                        </Typography>
-                                    }
-                                    secondary={
-                                        <React.Fragment>
-                                            <Typography
-                                                component="span"
-                                                variant="body2"
-                                                color="text.secondary"
-                                                sx={{ display: 'block', mt: 0.5 }}
-                                            >
-                                                病歷號: {patient.mrn}
+                    {patients.length > 0 ? (
+                        patients.map((patient, index) => (
+                            <ListItem key={patient.id} disablePadding divider>
+                                <ListItemButton onClick={() => onSelectPatient(patient)} sx={{ py: 2 }}>
+                                    <ListItemAvatar>
+                                        <Avatar
+                                            sx={{
+                                                bgcolor: patient.gender === 'Male' ? '#6c5ce7' : '#ff7675',
+                                                width: 50,
+                                                height: 50,
+                                                mr: 2
+                                            }}
+                                        >
+                                            {patient.name[0]}
+                                        </Avatar>
+                                    </ListItemAvatar>
+                                    <ListItemText
+                                        primary={
+                                            <Typography variant="h6" component="span" fontWeight="bold" color="text.primary">
+                                                {patient.name}
                                             </Typography>
-                                            <Typography
-                                                component="span"
-                                                variant="body2"
-                                                color="text.secondary"
-                                            >
-                                                {patient.gender === 'Male' ? '男' : '女'} • {new Date(patient.birth_date).toLocaleDateString()}
-                                            </Typography>
-                                        </React.Fragment>
-                                    }
-                                />
-                            </ListItemButton>
-                        </ListItem>
-                    ))}
+                                        }
+                                        secondary={
+                                            <React.Fragment>
+                                                <Typography
+                                                    component="span"
+                                                    variant="body2"
+                                                    color="text.secondary"
+                                                    sx={{ display: 'block', mt: 0.5 }}
+                                                >
+                                                    病歷號: {patient.mrn}
+                                                </Typography>
+                                                <Typography
+                                                    component="span"
+                                                    variant="body2"
+                                                    color="text.secondary"
+                                                >
+                                                    {patient.gender === 'Male' ? '男' : '女'} • {new Date(patient.birth_date).toLocaleDateString()}
+                                                </Typography>
+                                            </React.Fragment>
+                                        }
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        ))
+                    ) : (
+                        !loading && (
+                            <Box sx={{ p: 4, textAlign: 'center' }}>
+                                <Typography color="text.secondary">查無病患資料</Typography>
+                            </Box>
+                        )
+                    )}
                 </List>
             </Box>
 

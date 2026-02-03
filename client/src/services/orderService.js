@@ -5,15 +5,16 @@ import api from '../api';
  */
 const orderService = {
     /**
-     * Fetches orders for a specific patient.
+     * Fetches orders for a specific patient with search.
      * @param {number} patientId - The ID of the patient.
      * @param {number} page - The page number.
      * @param {number} limit - The number of items per page.
+     * @param {string} search - The search term.
      * @returns {Promise<Object>} The paginated orders data.
      */
-    getOrders: async (patientId, page = 1, limit = 5) => {
+    getOrders: async (patientId, page = 1, limit = 5, search = '') => {
         const response = await api.get(`/patients/${patientId}/orders`, {
-            params: { page, limit }
+            params: { page, limit, search }
         });
         return response.data;
     },

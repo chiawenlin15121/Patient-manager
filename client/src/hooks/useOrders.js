@@ -6,6 +6,7 @@ const useOrders = (patientId, initialPage = 1, initialLimit = 5) => {
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(initialPage);
     const [limit, setLimit] = useState(initialLimit);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -15,7 +16,7 @@ const useOrders = (patientId, initialPage = 1, initialLimit = 5) => {
         setLoading(true);
         setError(null);
         try {
-            const data = await orderService.getOrders(patientId, page, limit);
+            const data = await orderService.getOrders(patientId, page, limit, searchQuery);
             setOrders(data.data);
             setTotalCount(data.total);
         } catch (err) {
@@ -24,7 +25,7 @@ const useOrders = (patientId, initialPage = 1, initialLimit = 5) => {
         } finally {
             setLoading(false);
         }
-    }, [patientId, page, limit]);
+    }, [patientId, page, limit, searchQuery]);
 
     useEffect(() => {
         fetchOrders();
@@ -37,6 +38,8 @@ const useOrders = (patientId, initialPage = 1, initialLimit = 5) => {
         setPage,
         limit,
         setLimit,
+        searchQuery,
+        setSearchQuery,
         loading,
         error,
         refetch: fetchOrders

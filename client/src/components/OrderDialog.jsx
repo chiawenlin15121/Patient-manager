@@ -1,22 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Dialog, DialogTitle, DialogContent,
     Button, IconButton, List, ListItem, ListItemText,
-    TextField, Typography, Box, Paper, Pagination, Stack, CircularProgress
+    TextField, Typography, Box, Paper, Pagination, Stack, CircularProgress, InputAdornment
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
+import SearchIcon from '@mui/icons-material/Search';
 import orderService from '../services/orderService';
 import useOrders from '../hooks/useOrders';
 
 const OrderDialog = ({ patient, open, onClose }) => {
-    const { orders, totalCount, page, setPage, limit, loading, refetch } = useOrders(patient?.id);
+    const { orders, totalCount, page, setPage, limit, loading, refetch, searchQuery, setSearchQuery } = useOrders(patient?.id);
     const [newOrderMode, setNewOrderMode] = useState(false);
     const [newOrderText, setNewOrderText] = useState('');
     const [editingOrderId, setEditingOrderId] = useState(null);
     const [editText, setEditText] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Debounce search update
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setSearchQuery(searchTerm);
+            if (searchTerm !== searchQuery) {
+                setPage(1); // Reset to first page on new search
+            }
+        }, 500);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [searchTerm, setSearchQuery, searchQuery, setPage]);
+
+    // Reset search when dialog opens
+    useEffect(() => {
+        if (open) {
+            setSearchTerm('');
+            setSearchQuery('');
+        }
+    }, [open, setSearchQuery]);
+
 
     const handleAddOrder = async () => {
         try {
@@ -83,6 +108,24 @@ const OrderDialog = ({ patient, open, onClose }) => {
                 </Box>
             </DialogTitle>
             <DialogContent dividers sx={{ backgroundColor: '#f8f9fa', minHeight: '400px', p: 3, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ mb: 2 }}>
+                    <TextField
+                        size="small"
+                        fullWidth
+                        placeholder="搜尋醫囑內容..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon color="action" />
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{ bgcolor: '#fff' }}
+                    />
+                </Box>
+
                 {newOrderMode && (
                     <Paper sx={{ p: 3, mb: 3, borderRadius: 3, border: '2px solid #6c5ce7', boxShadow: '0 4px 20px rgba(108, 92, 231, 0.1)' }} elevation={0}>
                         <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>新增醫囑</Typography>
@@ -104,7 +147,7 @@ const OrderDialog = ({ patient, open, onClose }) => {
                     </Paper>
                 )}
 
-                {loading ? (
+                {loading && !orders.length ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
                         <CircularProgress />
                     </Box>
@@ -158,8 +201,10 @@ const OrderDialog = ({ patient, open, onClose }) => {
                             ))}
                             {!newOrderMode && orders.length === 0 && (
                                 <Box sx={{ textAlign: 'center', py: 8, opacity: 0.6 }}>
-                                    <Typography variant="h6" color="text.secondary">尚無醫囑</Typography>
-                                    <Typography variant="body2" color="text.secondary">點擊上方按鈕新增第一筆醫囑</Typography>
+                                    <Typography variant="h6" color="text.secondary">
+                                        {searchTerm ? '查無符合搜尋的醫囑' : '尚無醫囑'}
+                                    </Typography>
+                                    {!searchTerm && <Typography variant="body2" color="text.secondary">點擊上方按鈕新增第一筆醫囑</Typography>}
                                 </Box>
                             )}
                         </List>
