@@ -20,12 +20,12 @@ const OrderDialog = ({ patient, open, onClose }) => {
     const [editText, setEditText] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Debounce search update
+    // 處理搜尋關鍵字的防抖動 (Debounce)
     useEffect(() => {
         const handler = setTimeout(() => {
             setSearchQuery(searchTerm);
             if (searchTerm !== searchQuery) {
-                setPage(1); // Reset to first page on new search
+                setPage(1); // 搜尋時重置回第一頁
             }
         }, 500);
 
@@ -34,7 +34,7 @@ const OrderDialog = ({ patient, open, onClose }) => {
         };
     }, [searchTerm, setSearchQuery, searchQuery, setPage]);
 
-    // Reset search when dialog opens
+    // 開啟對話框時重置搜尋狀態
     useEffect(() => {
         if (open) {
             setSearchTerm('');
@@ -211,7 +211,7 @@ const OrderDialog = ({ patient, open, onClose }) => {
                     </Box>
                 )}
 
-                {/* Pagination */}
+                {/* 分頁控制區 */}
                 {totalCount > 0 && (
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
                         <Pagination

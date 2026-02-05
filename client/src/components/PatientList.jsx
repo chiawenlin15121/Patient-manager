@@ -10,13 +10,12 @@ const PatientList = ({ onSelectPatient }) => {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState(searchQuery);
 
-    // Debounce search update
-    // Sync local search term with URL search query (e.g. on back/reload)
+    // 同步 URL 搜尋參數，並更新本地搜尋狀態
     useEffect(() => {
         setSearchTerm(searchQuery);
     }, [searchQuery]);
 
-    // Debounce search update
+    // 處理搜尋關鍵字的防抖動 (Debounce)
     useEffect(() => {
         const handler = setTimeout(() => {
             setSearchQuery(searchTerm);
@@ -31,7 +30,7 @@ const PatientList = ({ onSelectPatient }) => {
         setPage(value);
     };
 
-    if (loading && patients.length === 0 && !searchTerm) { // Only show full loader on initial load without search interactions pending
+    if (loading && patients.length === 0 && !searchTerm) { // 初次載入且無搜尋動作時顯示完整 Loading
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
                 <CircularProgress />

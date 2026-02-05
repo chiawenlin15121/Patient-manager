@@ -4,10 +4,10 @@ const theme = createTheme({
     palette: {
         mode: 'light',
         primary: {
-            main: '#6c5ce7', // Vibrant purple
+            main: '#6c5ce7', // 亮紫色
         },
         secondary: {
-            main: '#00cec9', // Vibrant teal
+            main: '#00cec9', // 亮青色
         },
         background: {
             default: '#f0f2f5',
@@ -44,7 +44,7 @@ const theme = createTheme({
             styleOverrides: {
                 paper: {
                     borderRadius: 20,
-                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)', // Glass-ish shadow
+                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)', // 類玻璃質感陰影
                 },
             },
         },

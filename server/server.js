@@ -9,24 +9,17 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Get all patients with pagination and search
+// 取得所有病患列表 (包含分頁與搜尋功能)
 app.get('/api/patients', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 5; // Default limit 5 as per frontend rowsPerPage
+    const limit = parseInt(req.query.limit) || 5; // 預設每頁顯示 5 筆 (與前端設定一致)
     const search = req.query.search || '';
     const skip = (page - 1) * limit;
 
     const where = search ? {
         name: {
             contains: search,
-            // Mode 'insensitive' depends on database collation, but usually supported in postgres.
-            // If using sqlite, check if need case insensitive setup, but for now assuming default or postgres.
-            // Safe to try mode 'insensitive' for Prisma Client if database supports it.
-            // If using standard sqlite, it might not support insensitive out of box without config,
-            // but let's assume standard behavior first. If it fails, we fall back.
-            // Actually, for SQLite, contains is case insensitive by default for ASCII usually, but let's try explicit mode.
-            // The user didn't specify DB type, but usually it's better to be explicit.
-            // User context said "PostgreSQL database" in previous turn summary.
+            // 設定為 'insensitive' 以支援不分大小寫的搜尋 (適用於 PostgreSQL)
             mode: 'insensitive',
         }
     } : {};
@@ -55,11 +48,11 @@ app.get('/api/patients', async (req, res) => {
     }
 });
 
-// Create a new patient
+// 新增病患資料
 app.post('/api/patients', async (req, res) => {
     const { name, gender, mrn, birth_date } = req.body;
 
-    // Basic validation
+    // 基礎欄位驗證
     if (!name || !gender || !mrn || !birth_date) {
         return res.status(400).json({ error: 'All fields (name, gender, mrn, birth_date) are required' });
     }
@@ -73,10 +66,10 @@ app.post('/api/patients', async (req, res) => {
                 birth_date: new Date(birth_date),
             },
         });
-        res.status(201).json(newPatient); // 201 Created
+        res.status(201).json(newPatient); // 建立成功 (回傳 201 狀態碼)
     } catch (err) {
         console.error(err);
-        // Prisma unique constraint violation code
+        // 處理 Prisma 的唯一約束衝突 (如病歷號重複)
         if (err.code === 'P2002') {
             return res.status(409).json({ error: 'Patient with this MRN already exists' });
         }
@@ -84,7 +77,7 @@ app.post('/api/patients', async (req, res) => {
     }
 });
 
-// Get patient count
+// 取得病患總數
 app.get('/api/patients/count', async (req, res) => {
     try {
         const count = await prisma.patients.count();
@@ -95,7 +88,7 @@ app.get('/api/patients/count', async (req, res) => {
     }
 });
 
-// Get orders for a patient with pagination and search
+// 取得特定病患的醫囑 (包含分頁與搜尋)
 app.get('/api/patients/:id/orders', async (req, res) => {
     const { id } = req.params;
     const page = parseInt(req.query.page) || 1;
@@ -139,7 +132,7 @@ app.get('/api/patients/:id/orders', async (req, res) => {
     }
 });
 
-// Create a new order
+// 新增醫囑
 app.post('/api/orders', async (req, res) => {
     const { patient_id, message } = req.body;
     try {
@@ -156,7 +149,7 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-// Update an order
+// 更新醫囑內容
 app.put('/api/orders/:id', async (req, res) => {
     const { id } = req.params;
     const { message } = req.body;
@@ -165,13 +158,13 @@ app.put('/api/orders/:id', async (req, res) => {
             where: { id: Number(id) },
             data: {
                 message: message,
-                updated_at: new Date(), // Manual update for timestamp
+                updated_at: new Date(), // 手動更新最後修改時間
             },
         });
         res.json(updatedOrder);
     } catch (err) {
         console.error(err);
-        if (err.code === 'P2025') { // Record to update not found
+        if (err.code === 'P2025') { // 找不到欲更新的紀錄
             return res.status(404).json({ error: 'Order not found' });
         }
         res.status(500).json({ error: 'Server error' });

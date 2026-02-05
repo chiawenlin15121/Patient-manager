@@ -34,7 +34,7 @@ const AddPatientDialog = ({ open, onClose, onPatientAdded }) => {
             await patientService.createPatient(formData);
             onPatientAdded();
             onClose();
-            // Reset form
+            // 重置表單
             setFormData({
                 name: '',
                 mrn: '',

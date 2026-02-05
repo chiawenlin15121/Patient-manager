@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import patientService from '../services/patientService';
 
 /**
- * Custom hook to manage patient data fetching and state.
- * separating the data fetching logic from the UI component.
+ * 管理病患資料獲取與狀態的 Custom Hook
+ * 將資料獲取邏輯與 UI 元件分離
  */
 const usePatients = (initialPage = 1, initialLimit = 5) => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -60,7 +60,7 @@ const usePatients = (initialPage = 1, initialLimit = 5) => {
         }
     }, [page, limit, searchQuery]);
 
-    // Fetch when page, limit, or search query changes
+    // 當頁碼、分頁數量或搜尋關鍵字變更時，重新獲取資料
     useEffect(() => {
         fetchPatients();
     }, [fetchPatients]);

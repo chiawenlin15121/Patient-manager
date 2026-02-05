@@ -1,16 +1,16 @@
 import api from '../api';
 
 /**
- * Service to handle patient-related API calls.
- * Follows the repository pattern to abstract data access.
+ * 處理病患相關 API 請求的 Service
+ * 採用 Repository Pattern 封裝資料存取
  */
 const patientService = {
     /**
-     * Fetches the complete list of patients with pagination and search.
-     * @param {number} page - The page number (1-indexed).
-     * @param {number} limit - The number of items per page.
-     * @param {string} search - The search query term.
-     * @returns {Promise<Object>} The paginated patient data.
+     * 取得病患列表 (包含分頁與搜尋)
+     * @param {number} page - 頁碼 (從 1 開始)
+     * @param {number} limit - 每頁筆數
+     * @param {string} search - 搜尋關鍵字
+     * @returns {Promise<Object>} 回傳分頁後的病患資料
      */
     getAllPatients: async (page = 1, limit = 5, search = '') => {
         const response = await api.get('/patients', {
@@ -20,8 +20,8 @@ const patientService = {
     },
 
     /**
-     * Fetches the total count of patients.
-     * @returns {Promise<Object>} The count object.
+     * 取得病患總數
+     * @returns {Promise<Object>} 回傳數量物件
      */
     getPatientCount: async () => {
         const response = await api.get('/patients/count');
@@ -29,9 +29,9 @@ const patientService = {
     },
 
     /**
-     * Creates a new patient.
-     * @param {Object} patientData - The patient data to create.
-     * @returns {Promise<Object>} The created patient.
+     * 新增病患
+     * @param {Object} patientData - 欲新增的病患資料
+     * @returns {Promise<Object>} 回傳新增後的病患資料
      */
     createPatient: async (patientData) => {
         const response = await api.post('/patients', patientData);
