@@ -1,49 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import patientService from '../services/patientService';
+import useUrlPagination from './useUrlPagination';
 
 /**
  * 管理病患資料獲取與狀態的 Custom Hook
- * 將資料獲取邏輯與 UI 元件分離
+ * 
+ * 職責：
+ * 1. 使用 useUrlPagination 管理 URL 狀態
+ * 2. 負責呼叫 Service 獲取資料
+ * 3. 處理 Loading 與 Error 狀態
  */
 const usePatients = (initialPage = 1, initialLimit = 5) => {
-    const [searchParams, setSearchParams] = useSearchParams();
+    // 將 URL 狀態管理職責委派給 useUrlPagination
+    const {
+        page, setPage,
+        limit, setLimit,
+        searchQuery, setSearchQuery
+    } = useUrlPagination(initialPage, initialLimit);
+
     const [patients, setPatients] = useState([]);
     const [totalCount, setTotalCount] = useState(0);
-
-    const page = parseInt(searchParams.get('page') || initialPage);
-    const limit = parseInt(searchParams.get('limit') || initialLimit);
-    const searchQuery = searchParams.get('q') || '';
-
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-
-    const setPage = (newPage) => {
-        const newParams = new URLSearchParams(searchParams);
-        newParams.set('page', newPage);
-        setSearchParams(newParams);
-    };
-
-    const setLimit = (newLimit) => {
-        const newParams = new URLSearchParams(searchParams);
-        newParams.set('limit', newLimit);
-        setSearchParams(newParams);
-    };
-
-    const setSearchQuery = (newQuery) => {
-        const currentQ = searchParams.get('q') || '';
-        if (currentQ === newQuery) return;
-
-        const newParams = new URLSearchParams(searchParams);
-        if (newQuery) {
-            newParams.set('q', newQuery);
-        } else {
-            newParams.delete('q');
-        }
-        newParams.set('page', 1);
-        setSearchParams(newParams, { replace: true });
-    };
-
 
     const fetchPatients = useCallback(async () => {
         setLoading(true);
