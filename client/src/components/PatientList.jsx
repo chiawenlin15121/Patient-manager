@@ -3,28 +3,18 @@ import { List, ListItem, ListItemButton, ListItemText, ListItemAvatar, Avatar, T
 import AddIcon from '@mui/icons-material/Add';
 import React, { useState, useEffect } from 'react';
 import usePatients from '../hooks/usePatients';
+import useSearch from '../hooks/useSearch';
 import AddPatientDialog from './AddPatientDialog';
 
 const PatientList = ({ onSelectPatient }) => {
     const { patients, totalCount, page, setPage, limit, loading, error, refetch, searchQuery, setSearchQuery } = usePatients();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState(searchQuery);
+    // 使用 useSearch Hook 管理搜尋狀態與防抖動
+    const handleSearchChange = React.useCallback((query) => {
+        setSearchQuery(query);
+    }, [setSearchQuery]);
 
-    // 同步 URL 搜尋參數，並更新本地搜尋狀態
-    useEffect(() => {
-        setSearchTerm(searchQuery);
-    }, [searchQuery]);
-
-    // 處理搜尋關鍵字的防抖動 (Debounce)
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setSearchQuery(searchTerm);
-        }, 500);
-
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [searchTerm, setSearchQuery]);
+    const [searchTerm, setSearchTerm] = useSearch(searchQuery, handleSearchChange);
 
     const handleChangePage = (event, value) => {
         setPage(value);

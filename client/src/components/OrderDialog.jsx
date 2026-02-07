@@ -11,6 +11,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import SearchIcon from '@mui/icons-material/Search';
 import orderService from '../services/orderService';
 import useOrders from '../hooks/useOrders';
+import useSearch from '../hooks/useSearch';
 
 const OrderDialog = ({ patient, open, onClose }) => {
     const { orders, totalCount, page, setPage, limit, loading, refetch, searchQuery, setSearchQuery } = useOrders(patient?.id);
@@ -18,21 +19,14 @@ const OrderDialog = ({ patient, open, onClose }) => {
     const [newOrderText, setNewOrderText] = useState('');
     const [editingOrderId, setEditingOrderId] = useState(null);
     const [editText, setEditText] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
 
-    // 處理搜尋關鍵字的防抖動 (Debounce)
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setSearchQuery(searchTerm);
-            if (searchTerm !== searchQuery) {
-                setPage(1); // 搜尋時重置回第一頁
-            }
-        }, 500);
+    // 使用 useSearch Hook 管理搜尋狀態與防抖動
+    const handleSearchChange = React.useCallback((query) => {
+        setSearchQuery(query);
+        setPage(1); // 搜尋時重置回第一頁
+    }, [setSearchQuery, setPage]);
 
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [searchTerm, setSearchQuery, searchQuery, setPage]);
+    const [searchTerm, setSearchTerm] = useSearch(searchQuery, handleSearchChange);
 
     // 開啟對話框時重置搜尋狀態
     useEffect(() => {
