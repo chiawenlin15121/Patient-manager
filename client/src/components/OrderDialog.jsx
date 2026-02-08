@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
     Dialog, DialogTitle, DialogContent,
     Button, IconButton, List, ListItem, ListItemText,
-    TextField, Typography, Box, Paper, Pagination, Stack, CircularProgress, InputAdornment
+    TextField, Typography, Box, Paper, Pagination, Stack, CircularProgress, InputAdornment,
+    Snackbar, Alert, Tooltip
 } from '@mui/material';
+import { formatDistanceToNow } from 'date-fns';
+import { zhTW } from 'date-fns/locale';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -28,14 +31,26 @@ const OrderDialog = ({ patient, open, onClose }) => {
 
     const [searchTerm, setSearchTerm] = useSearch(searchQuery, handleSearchChange);
 
-    // 開啟對話框時重置搜尋狀態
+    // 對話框關閉時重置搜尋狀態與頁碼
     useEffect(() => {
-        if (open) {
+        if (!open) {
             setSearchTerm('');
             setSearchQuery('');
+            setPage(1);
         }
-    }, [open, setSearchQuery]);
+    }, [open, setSearchQuery, setSearchTerm, setPage]);
 
+
+    const [error, setError] = useState(null);
+    const [openSnackbar, setOpenSnackbar] = useState(false);
+
+    // 統一錯誤處理 helper
+    const handleError = (err, defaultMsg) => {
+        console.error(defaultMsg, err);
+        const message = err.response?.data?.error || err.message || defaultMsg;
+        setError(message);
+        setOpenSnackbar(true);
+    };
 
     const handleAddOrder = async () => {
         try {
@@ -44,7 +59,7 @@ const OrderDialog = ({ patient, open, onClose }) => {
             setNewOrderText('');
             refetch();
         } catch (err) {
-            console.error(err);
+            handleError(err, "新增醫囑失敗");
         }
     };
 
@@ -54,7 +69,7 @@ const OrderDialog = ({ patient, open, onClose }) => {
             setEditingOrderId(null);
             refetch();
         } catch (err) {
-            console.error(err);
+            handleError(err, "更新醫囑失敗");
         }
     };
 
@@ -67,18 +82,16 @@ const OrderDialog = ({ patient, open, onClose }) => {
         setPage(value);
     };
 
+    const handleCloseSnackbar = () => {
+        setOpenSnackbar(false);
+    };
+
     return (
         <Dialog
             open={open}
             onClose={onClose}
             fullWidth
             maxWidth="md"
-            PaperProps={{
-                sx: {
-                    borderRadius: 4,
-                    background: '#fff',
-                }
-            }}
         >
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
                 <Box>
@@ -174,7 +187,7 @@ const OrderDialog = ({ patient, open, onClose }) => {
                                                 />
                                                 <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
                                                     <Button size="small" onClick={() => setEditingOrderId(null)}>取消</Button>
-                                                    <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={() => handleSaveEdit(order.id)}>更新</Button>
+                                                    <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={() => handleSaveEdit(order.id)} disabled={!editText.trim()}>更新</Button>
                                                 </Box>
                                             </Box>
                                         ) : (
@@ -183,10 +196,12 @@ const OrderDialog = ({ patient, open, onClose }) => {
                                                     <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, color: '#2d3436' }}>{order.message}</Typography>
                                                 }
                                                 secondary={
-                                                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                                                        {new Date(order.created_at).toLocaleString('zh-TW')}
-                                                        {order.updated_at !== order.created_at && ' (已編輯)'}
-                                                    </Typography>
+                                                    <Tooltip title={new Date(order.created_at).toLocaleString('zh-TW')} placement="top">
+                                                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'inline-block', cursor: 'pointer' }}>
+                                                            {formatDistanceToNow(new Date(order.created_at), { addSuffix: true, locale: zhTW })}
+                                                            {order.updated_at !== order.created_at && ' (已編輯)'}
+                                                        </Typography>
+                                                    </Tooltip>
                                                 }
                                             />
                                         )}
@@ -218,6 +233,17 @@ const OrderDialog = ({ patient, open, onClose }) => {
                     </Box>
                 )}
             </DialogContent>
+
+            <Snackbar
+                open={openSnackbar}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+                    {error}
+                </Alert>
+            </Snackbar>
         </Dialog>
     );
 };
